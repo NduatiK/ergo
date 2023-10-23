@@ -565,7 +565,7 @@ defmodule Ergo.Combinators do
       label,
       fn %Context{} = ctx ->
         with %Context{status: {atom, [error | other_errors]}} = match_ctx <- Parser.invoke(ctx, parser) do
-          %Context{status: {atom, [transformer_fn.(error) | other_errors]}}
+          %Context{match_ctx |status: {atom, [transformer_fn.(error) | other_errors]}}
         end
       end,
       child_info: Parser.child_info_for_telemetry(parser)

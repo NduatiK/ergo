@@ -13,6 +13,7 @@ defmodule Ergo.Combinators do
   * optional
   * ignore
   * transform
+  * transform_error
   * lookeahead
   * not_lookahead
 
@@ -535,6 +536,36 @@ defmodule Ergo.Combinators do
         with %Context{status: :ok} = match_ctx <- Parser.invoke(ctx, parser) do
           match_ctx
           |> Context.ast_transform(transformer_fn)
+        end
+      end,
+      child_info: Parser.child_info_for_telemetry(parser)
+    )
+  end
+
+  @doc ~S"""
+  The `transform_error/2` parser runs a transforming function on the error of its child parser.
+
+  ## Examples
+
+      <!-- # Sum the digits
+      iex> alias Ergo.Context
+      iex> import Ergo.{Combinators, Terminals}
+      iex> digit_to_int = fn d -> List.to_string([d]) |> String.to_integer() end
+      iex> t_fn = fn ast -> ast |> Enum.map(digit_to_int) |> Enum.sum() end
+      iex> parser = sequence([digit(), digit(), digit(), digit()]) |> transform(t_fn)
+      iex> context = Ergo.parse(parser, "1234")
+      iex> %Context{status: :ok, ast: 10, index: 4, line: 1, col: 5} = context -->
+  """
+  def transform_error(%Parser{} = parser, transformer_fn, opts \\ [])
+      when is_function(transformer_fn) do
+    label = Keyword.get(opts, :label, "transform_error<#{parser.label}>")
+
+    Parser.combinator(
+      :transform_error,
+      label,
+      fn %Context{} = ctx ->
+        with %Context{status: {atom, [error | other_errors]}} = match_ctx <- Parser.invoke(ctx, parser) do
+          %Context{status: {atom, [transformer_fn.(error) | other_errors]}}
         end
       end,
       child_info: Parser.child_info_for_telemetry(parser)

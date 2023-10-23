@@ -266,7 +266,7 @@ defmodule Ergo.Context do
   end
 
   def uncommit(%Context{commit: commit_level} = ctx) when commit_level > 0 do
-    %{ctx | commit: commit_level-1}
+    %{ctx | commit: commit_level - 1}
   end
 
   @doc ~S"""
